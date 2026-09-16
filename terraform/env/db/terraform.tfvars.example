@@ -1,0 +1,12 @@
+# terraform.tfvars로 복사한 뒤 실제 DB 사용자 이름을 설정하세요.
+# 비밀번호는 TF_VAR_db_password 환경 변수로 입력하세요.
+# 기존 terraform.old 입력 중 이 env가 소유하는 값만 유지합니다.
+# env/app 적용 후 VPC·DB 서브넷·DB 보안 그룹은 데이터 소스로 자동 조회하므로 ID를 별도로 입력하지 않습니다.
+
+db_allocated_storage         = 20
+db_engine_version            = "17.11"
+db_final_snapshot_identifier = "arcamap-postgres-final"
+db_instance_class            = "db.t4g.medium"
+db_max_allocated_storage     = 100
+db_username                  = "dbadmin"
+log_retention_days           = 30
