@@ -8,6 +8,4 @@ ArcaMap은 Terraform 기반의 코드형 인프라(IaC)를 통해 AWS 리소스�
 
 ## 3. 사용자 요청 흐름도
 
-[![사용자 요청 흐름도](docs/user-request-flow.dark.png)](https://cloudvengers.github.io/ArcaMap/user-request-flow.html?theme=dark)
-
-[애니메이션 흐름도 바로 보기](https://cloudvengers.github.io/ArcaMap/user-request-flow.html?theme=dark)
+![사용자 요청 흐름도 애니메이션](docs/user-request-flow.gif)
