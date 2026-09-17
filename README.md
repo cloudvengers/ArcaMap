@@ -8,6 +8,6 @@ ArcaMap은 Terraform 기반의 코드형 인프라(IaC)를 통해 AWS 리소스�
 
 ## 3. 사용자 요청 흐름도
 
-[애니메이션 흐름도 HTML](docs/user-request-flow.html)
+[![사용자 요청 흐름도](docs/user-request-flow.dark.png)](https://cloudvengers.github.io/ArcaMap/user-request-flow.html?theme=dark)
 
-HTML을 다운로드하여 브라우저에서 열면 요청·응답 애니메이션을 확인할 수 있습니다. 요청은 청록색, 응답은 분홍색으로 표시됩니다. GitHub 파일 화면에서는 HTML 소스가 표시됩니다.
+[애니메이션 흐름도 바로 보기](https://cloudvengers.github.io/ArcaMap/user-request-flow.html?theme=dark)
