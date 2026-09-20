@@ -1,0 +1,13 @@
+# Terraform working directories and generated state/plan files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Local credentials
+/terraform/env/db/terraform.tfvars
+.env
+.env.*
+!.env.example
+*.pem
+*.key
