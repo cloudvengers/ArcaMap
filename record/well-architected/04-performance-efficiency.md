@@ -2,7 +2,7 @@
 
 **⚡ CloudFront 캐시와 CPU 기반 자동 확장으로 콘텐츠 전달과 API 처리 용량을 조절합니다.**
 
-ArcaMap은 웹·지도·사진을 S3와 CloudFront로 제공하고, ALB가 두 가용 영역의 API 서버에 요청을 분산합니다. API 서버는 필요한 데이터를 RDS PostgreSQL에서 가져옵니다.
+ArcaMap은 웹·지도·사진을 S3와 CloudFront로 제공하고 ALB가 두 가용 영역의 API 서버에 요청을 분산합니다. API 서버는 필요한 데이터를 RDS PostgreSQL에서 가져옵니다.
 
 **공통 집계 기간은 2026-09-14 00:00 이상~2026-09-22 00:00 미만**, 구성 확인 시점은 **2026-09-22 15:46~15:52**입니다. 날짜와 시각은 모두 KST입니다.
 
@@ -12,13 +12,13 @@ ArcaMap은 웹·지도·사진을 S3와 CloudFront로 제공하고, ALB가 두 �
 
 ### 1.1 리소스 구성
 
-API·DB와 S3 원본은 서울 리전에서 운영합니다. CloudFront는 전 세계 엣지에서 콘텐츠를 제공하며, 배포 지표는 버지니아 북부 리전에서 제공합니다.
+API·DB와 S3 원본은 서울 리전에서 운영합니다. CloudFront는 전 세계 엣지에서 콘텐츠를 제공하며 배포 지표는 버지니아 북부 리전에서 제공합니다.
 
 | 구성 요소 | 현재 설정과 연결 관계 | Terraform 정의 |
 |---|---|---|
 | 네트워크 | ALB는 퍼블릭 서브넷, API와 DB는 서로 다른 프라이빗 서브넷을 사용합니다. 두 API 서브넷은 각각 NAT Gateway를 통해 외부로 연결됩니다. | [VPC·서브넷·라우팅](../../terraform/modules/network/main.tf#L1) |
-| ALB | `arcamap-api`는 서울의 두 가용 영역 `ap-northeast-2a`·`ap-northeast-2c`에 요청을 분산합니다. HTTP 80은 HTTPS 443으로 전환하고, TLS 종료 후 HTTP 8080으로 API에 전달합니다. | [ALB·리스너](../../terraform/modules/alb/main.tf#L1) |
-| API 대상 그룹 | 두 API 대상은 모두 정상입니다. 요청을 순환 분산하며 연결 해제 대기 시간은 300초입니다. `/health`를 30초 간격으로 검사하고, 정상 전환에는 연속 5회 성공이 필요합니다. | [대상 그룹](../../terraform/modules/alb/main.tf#L14) |
+| ALB | `arcamap-api`는 서울의 두 가용 영역 `ap-northeast-2a`·`ap-northeast-2c`에 요청을 분산합니다. HTTP 80은 HTTPS 443으로 전환하고 TLS 종료 후 HTTP 8080으로 API에 전달합니다. | [ALB·리스너](../../terraform/modules/alb/main.tf#L1) |
+| API 대상 그룹 | 두 API 대상은 모두 정상입니다. 요청을 순환 분산하며 연결 해제 대기 시간은 300초입니다. `/health`를 30초 간격으로 검사하고 정상 전환에는 연속 5회 성공이 필요합니다. | [대상 그룹](../../terraform/modules/alb/main.tf#L14) |
 | EC2·EBS | API 인스턴스 두 대는 각각 `t3.small`·x86_64·2 vCPU·2 GiB입니다. CPU 버스트 모드는 `unlimited`이며 루트 볼륨은 gp3 20 GiB·3,000 IOPS·125 MiB/s입니다. | [시작 템플릿](../../terraform/modules/compute/main.tf#L1), [API 환경](../../terraform/env/was/main.tf#L197) |
 | Auto Scaling | `arcamap-api`는 최소 2대·최대 4대·현재 목표 2대입니다. 평균 CPU 50%를 목표로 확장·축소하며 준비 시간과 헬스 체크 유예는 각각 300초입니다. | [ASG](../../terraform/modules/compute/main.tf#L44), [CPU 정책](../../terraform/modules/compute/main.tf#L81) |
 | RDS | `arcamap-postgres`는 PostgreSQL 17.11·`db.t4g.medium`·Multi-AZ입니다. gp3 20 GiB·3,000 IOPS·125 MiB/s와 저장 공간 자동 확장 상한 100 GiB를 사용합니다. 대기 인스턴스는 장애 조치를 맡으며 읽기 복제본은 없습니다. | [DB 정의](../../terraform/modules/database/main.tf#L6), [DB 환경](../../terraform/env/db/main.tf#L72) |
@@ -29,7 +29,7 @@ TTL은 캐시 객체의 유효 기간입니다. 웹과 미디어의 캐시 정�
 
 ### 1.2 옵저빌리티 구성
 
-CloudWatch는 자원 사용량과 요청 오류를 감지하고 CPU 부하에 따라 API 수량을 조절합니다. [운영 기준](../../README.md#4-operational-criteria-and-constraints운영-기준-및-제약)의 배포 확인 항목은 서비스 등록·헬스 체크·API 응답·DB 연결이며, 지연·동시 사용자·업무 처리량의 합격 기준은 명시되어 있지 않습니다.
+CloudWatch는 자원 사용량과 요청 오류를 감지하고 CPU 부하에 따라 API 수량을 조절합니다. [운영 기준](../../README.md#4-operational-criteria-and-constraints운영-기준-및-제약)의 배포 확인 항목은 서비스 등록·헬스 체크·API 응답·DB 연결이며 지연·동시 사용자·업무 처리량의 합격 기준은 명시되어 있지 않습니다.
 
 | 관측 대상 | 수집·경보 설정 | Terraform 정의 |
 |---|---|---|
@@ -55,7 +55,7 @@ CloudWatch 대시보드와 서울 리전의 RUM·Synthetics는 구성되어 있�
 
 ## 2. [Pillar Principles(기둥의 원칙에 따른 검토)](https://docs.aws.amazon.com/wellarchitected/latest/framework/performance-efficiency.html)
 
-성능 효율성은 **성능 요구를 만족하도록 클라우드 자원을 효율적으로 사용하고, 수요와 기술이 바뀌어도 그 효율을 유지하는 능력**입니다. [공식 설계 원칙](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf-dp.html)에 따라 서비스 선택과 현재 운영의 관계를 살펴봅니다.
+성능 효율성은 **성능 요구를 만족하도록 클라우드 자원을 효율적으로 사용하고 수요와 기술이 바뀌어도 그 효율을 유지하는 능력**입니다. [공식 설계 원칙](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf-dp.html)에 따라 서비스 선택과 현재 운영의 관계를 살펴봅니다.
 
 | 공식 설계 원칙 | 현재 운영과의 관계 |
 |---|---|
@@ -63,7 +63,7 @@ CloudWatch 대시보드와 서울 리전의 RUM·Synthetics는 구성되어 있�
 | **Go global in minutes(필요한 지역에 신속하게 제공하기)** | 콘텐츠는 CloudFront 엣지에서, API·DB는 서울에서 제공합니다. 사용자 지역과 지연 요구가 없어 현재 배치의 적합성은 확인하기 어렵습니다. |
 | **Use serverless architectures(서버리스 아키텍처 활용하기)** | S3·CloudFront가 정적 콘텐츠를 제공해 별도 웹 서버의 운영 부담을 줄입니다. API 실행 방식의 적합성에는 요청·연결·배포 요구와 대안 비교가 필요합니다. |
 | **Experiment more often(자주 실험하기)** | 시작 템플릿과 인스턴스 교체로 실행 환경을 변경합니다. 동일 조건 벤치마크·부하 시험 기록이 없어 변경에 따른 성능 효과는 미확인입니다. |
-| **Consider mechanical sympathy(워크로드와 기술 특성의 적합성 고려하기)** | 객체·관계형 저장소와 콘텐츠별 TTL을 구분합니다. [지도 캐시](#45-cloudfront-캐시-결과와-콘텐츠별-응답-성능)의 응답 차이는 관측되지만, [DB 업무 부하](#43-rds-자원-사용과-미확인-업무-연결)와 호스트 메모리·동시성 자료가 부족해 전체 용량의 적정성은 미확인입니다. |
+| **Consider mechanical sympathy(워크로드와 기술 특성의 적합성 고려하기)** | 객체·관계형 저장소와 콘텐츠별 TTL을 구분합니다. [지도 캐시](#45-cloudfront-캐시-결과와-콘텐츠별-응답-성능)의 응답 차이는 관측되지만 [DB 업무 부하](#43-rds-자원-사용과-미확인-업무-연결)와 호스트 메모리·동시성 자료가 부족해 전체 용량의 적정성은 미확인입니다. |
 
 ## 3. [Questions and Best Practices(질문 및 모범 사례별 상세 점검)](https://docs.aws.amazon.com/wellarchitected/latest/framework/a-performance-efficiency.html)
 
@@ -76,7 +76,7 @@ CloudWatch 대시보드와 서울 리전의 RUM·Synthetics는 구성되어 있�
 | [PERF01-BP01 Learn about and understand available cloud services and features](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_understand_cloud_services_and_features.html) | 관련 서비스와 기능을 지속적으로 학습하고 선택에 반영합니다. | 관리형 서비스와 EC2를 함께 사용합니다. 학습·실험 기록은 미확인입니다. | [리소스 구성](#11-리소스-구성) | **확인 불가** | 학습 내용과 서비스 선택을 연결하는 운영 기록이 없습니다. |
 | [PERF01-BP02 Use guidance from your cloud provider or an appropriate partner to learn about architecture patterns and best practices](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_guidance_architecture_patterns_best_practices.html) | 공급자·파트너 지침을 업무 맥락에 맞게 적용합니다. | README에 설계 원칙은 있으나 설계 당시의 지침 적용·검토 기록은 미확인입니다. | [리소스 구성](#11-리소스-구성) | **확인 불가** | 설계 당시 적용한 지침과 검토 기록이 부족합니다. |
 | [PERF01-BP03 Factor cost into architectural decisions](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_factor_cost_into_architectural_decisions.html) | 비용 목표와 사용량을 성능·아키텍처 선택에 반영합니다. | 최대 4대와 가격 등급을 제한합니다. 비용 목표·대안 비교의 운영 기록은 미확인입니다. | [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) · [콘텐츠 캐시](#45-cloudfront-캐시-결과와-콘텐츠별-응답-성능) | **확인 불가** | 비용 목표와 대안별 성능 비교 자료가 부족합니다. |
-| [PERF01-BP04 Evaluate how trade-offs impact customers and architecture efficiency](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_evaluate_trade_offs.html) | 성능 개선의 신선도·비용·가용성·사용자 영향을 평가합니다. | 콘텐츠별 TTL을 적용하며, 교체 중 정상 대상이 사라졌습니다. 중단 허용 기준과 사용자 영향 평가 기록은 미확인입니다. | [리소스 구성](#11-리소스-구성) · [ALB 연결과 배포](#44-alb-초기-연결-실패와-배포-중-처리-용량-소실) · [콘텐츠 캐시](#45-cloudfront-캐시-결과와-콘텐츠별-응답-성능) | **확인 불가** | 신선도·비용·가용성 간 선택이 사용자에게 미치는 영향을 평가한 자료가 부족합니다. |
+| [PERF01-BP04 Evaluate how trade-offs impact customers and architecture efficiency](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_evaluate_trade_offs.html) | 성능 개선의 신선도·비용·가용성·사용자 영향을 평가합니다. | 콘텐츠별 TTL을 적용하며 교체 중 정상 대상이 사라졌습니다. 중단 허용 기준과 사용자 영향 평가 기록은 미확인입니다. | [리소스 구성](#11-리소스-구성) · [ALB 연결과 배포](#44-alb-초기-연결-실패와-배포-중-처리-용량-소실) · [콘텐츠 캐시](#45-cloudfront-캐시-결과와-콘텐츠별-응답-성능) | **확인 불가** | 신선도·비용·가용성 간 선택이 사용자에게 미치는 영향을 평가한 자료가 부족합니다. |
 | [PERF01-BP05 Use policies and reference architectures](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_use_policies_and_reference_architectures.html) | 정책·참조 구성을 재사용하고 성능 요구 충족을 검증합니다. | Terraform 모듈과 운영 기준에 따라 구성합니다. 배포 확인 기준은 상태·응답·연결 중심입니다. | [리소스 구성](#11-리소스-구성) · [관측과 대응](#46-성능-관측-범위와-운영-대응) | **부분 충족** | 재사용 구성과 배포 확인 항목은 있으나 지연·처리량의 합격 기준이 없습니다. |
 | [PERF01-BP06 Use benchmarking to drive architectural decisions](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_use_benchmarking.html) | 대표 작업을 반복 측정해 대안과 변경 전후를 비교합니다. | 운영 지표·로그는 존재하지만 동일 조건 벤치마크 결과는 미확인입니다. | [ALB 요청과 응답](#41-alb-요청량과-응답-시간의-표본-차이) · [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) · [DB 성능](#43-rds-자원-사용과-미확인-업무-연결) | **확인 불가** | 대표 작업의 반복 측정과 대안별 비교 결과가 없습니다. |
 | [PERF01-BP07 Use a data-driven approach for architectural choices](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_architecture_use_data_driven_approach.html) | 요구·측정·실험과 설계 결정을 연결합니다. | 아키텍처와 운영 지표가 존재합니다. 선택별 측정·채택 근거는 미확인입니다. | [ALB 요청과 응답](#41-alb-요청량과-응답-시간의-표본-차이) · [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) · [콘텐츠 캐시](#45-cloudfront-캐시-결과와-콘텐츠별-응답-성능) | **확인 불가** | 서비스 선택과 측정 결과를 연결하는 의사결정 기록이 부족합니다. |
@@ -89,7 +89,7 @@ CloudWatch 대시보드와 서울 리전의 RUM·Synthetics는 구성되어 있�
 |---|---|---|---|---|---|
 | [PERF02-BP01 Select the best compute options for your workload](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_select_best_compute_options.html) | 처리·확장·지연 요구로 컴퓨팅 방식을 선택합니다. | API는 EC2, 정적 콘텐츠는 S3·CloudFront입니다. 실행 방식 비교 자료는 미확인입니다. | [리소스 구성](#11-리소스-구성) · [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) | **확인 불가** | 대표 부하와 실행 방식별 비교 자료가 부족합니다. |
 | [PERF02-BP02 Understand the available compute configuration and features](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_understand_compute_configuration_features.html) | CPU·메모리·버스트·I/O·동시성 옵션을 요구에 맞게 평가합니다. | CPU 버스트·gp3·확장 정책을 사용합니다. CPU 수집은 5분, 자동 확장 경보 평가는 1분 간격입니다. | [리소스 구성](#11-리소스-구성) · [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) | **부분 충족** | CPU 수집은 5분, 목표 추적 경보 평가는 1분으로 설정되어 평가 자료에 빈 구간이 생깁니다. |
-| [PERF02-BP03 Collect compute-related metrics](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_collect_compute_related_metrics.html) | CPU·메모리·I/O·네트워크와 처리 성능을 수집합니다. | CPU·크레딧·네트워크·ALB 지연은 수집하며, Agent 정의는 journald 로그만 수집합니다. | [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) · [관측과 대응](#46-성능-관측-범위와-운영-대응) | **부분 충족** | 기본 자원 지표는 수집하지만 Agent 수집 설정에 호스트 메모리·프로세스 지표가 없습니다. |
+| [PERF02-BP03 Collect compute-related metrics](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_collect_compute_related_metrics.html) | CPU·메모리·I/O·네트워크와 처리 성능을 수집합니다. | CPU·크레딧·네트워크·ALB 지연은 수집하며 Agent 정의는 journald 로그만 수집합니다. | [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) · [관측과 대응](#46-성능-관측-범위와-운영-대응) | **부분 충족** | 기본 자원 지표는 수집하지만 Agent 수집 설정에 호스트 메모리·프로세스 지표가 없습니다. |
 | [PERF02-BP04 Configure and right-size compute resources](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_configure_and_right_size_compute_resources.html) | 대표 부하와 성능 요구로 자원 크기를 검증합니다. | 신·구 인스턴스 CPU는 낮습니다. 메모리·동시 처리량·부하 시험은 미확인입니다. | [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) | **확인 불가** | 메모리·동시 처리량과 성능 목표가 없어 적정 크기를 판단하기 어렵습니다. |
 | [PERF02-BP05 Scale your compute resources dynamically](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_scale_compute_resources_dynamically.html) | 수요에 따라 확장·축소하고 전환 중 처리 능력을 검증합니다. | CPU 50%의 2~4대 자동 조절은 활성화되어 있습니다. 교체 중 정상 대상 0이 발생했습니다. | [컴퓨팅 부하](#42-낮은-컴퓨팅-부하와-확장-검증-공백) · [ALB 연결과 배포](#44-alb-초기-연결-실패와-배포-중-처리-용량-소실) | **부분 충족** | 자동 조절은 구현됐으나 인스턴스 교체 중 정상 처리 용량이 사라졌습니다. |
 | [PERF02-BP06 Use optimized hardware-based compute accelerators](https://docs.aws.amazon.com/wellarchitected/latest/framework/perf_compute_hardware_compute_accelerators.html) | 가속이 필요한 작업에 적합한 전용 하드웨어를 사용합니다. | HTTP API와 저장된 지도·사진 객체를 제공합니다. | [리소스 구성](#11-리소스-구성) | **해당 없음** | HTTP API와 저장된 지도·사진 제공에는 전용 연산 가속 요구가 없습니다. |
@@ -138,7 +138,7 @@ CloudWatch 대시보드와 서울 리전의 RUM·Synthetics는 구성되어 있�
 
 ### 4.1 ALB 요청량과 응답 시간의 표본 차이
 
-**ALB의 대상 응답은 짧지만, 대상 응답 로그의 약 94%가 404입니다.** 정상 업무의 처리 성능을 판단하려면 검색·시설 상세 등 실제 기능의 성공 응답과 지연을 구분해야 합니다.
+**ALB의 대상 응답은 짧지만 대상 응답 로그의 약 94%가 404입니다.** 정상 업무의 처리 성능을 판단하려면 검색·시설 상세 등 실제 기능의 성공 응답과 지연을 구분해야 합니다.
 
 공통 기간의 요청·응답 지표는 서울 CloudWatch의 ALB `arcamap-api`, 접근 로그는 `/aws/vendedlogs/elb/arcamap-api`에 있습니다. 대상 응답 시간은 ALB가 API로 요청을 전달한 뒤 응답을 받기까지의 시간입니다.
 
@@ -165,7 +165,7 @@ p95와 p99는 각각 요청의 95%와 99%가 그 이내에 처리된 시간입�
 
 [ALB 요청 지표](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html)는 대상 선택 전 거부된 요청을 제외하므로 접근 로그와 집계 범위가 다릅니다. 지표는 9월 14일 01:50부터, 대상 응답 시간은 같은 날 22:40부터 5분 구간으로 기록되어 있습니다. 접근 로그의 기록 범위는 9월 14일 01:17:54~21일 23:56:57입니다.
 
-> **업무 성능 판단 제약**: 대상 응답 시간에는 연결 실패의 대기가 포함되지 않고, HTTP 200도 업무 기능과 연결되어 있지 않습니다. 따라서 현재 응답 분포와 최대 요청량으로 업무별 성능 목표 달성이나 처리 한계를 판단하기 어렵습니다.
+> **업무 성능 판단 제약**: 대상 응답 시간에는 연결 실패의 대기가 포함되지 않고 HTTP 200도 업무 기능과 연결되어 있지 않습니다. 따라서 현재 응답 분포와 최대 요청량으로 업무별 성능 목표 달성이나 처리 한계를 판단하기 어렵습니다.
 
 404의 원인은 요청 경로와 기능별 응답을 연결해 구분해야 합니다. 정상 업무의 성공률·처리량·지연을 함께 관측하면 오류 응답이 많은 현재 트래픽에서도 자원 크기와 확장 목표를 판단할 기준을 세울 수 있습니다. 연결 실패의 경위는 [4.4 초기 오류와 배포](#44-alb-초기-연결-실패와-배포-중-처리-용량-소실)에 연결됩니다.
 
@@ -173,7 +173,7 @@ p95와 p99는 각각 요청의 95%와 99%가 그 이내에 처리된 시간입�
 
 ### 4.2 낮은 컴퓨팅 부하와 확장 검증 공백
 
-**현재 API 두 대의 평균 CPU는 각각 1% 미만으로 확장 목표 50%보다 낮습니다.** 공통 기간의 서울 CloudWatch EC2 지표이며, 평균은 관측 표본 수인 `SampleCount`를 반영한 가중 평균입니다. 최대는 개별 관측값의 최댓값입니다.
+**현재 API 두 대의 평균 CPU는 각각 1% 미만으로 확장 목표 50%보다 낮습니다.** 공통 기간의 서울 CloudWatch EC2 지표이며 평균은 관측 표본 수인 `SampleCount`를 반영한 가중 평균입니다. 최대는 개별 관측값의 최댓값입니다.
 
 | API 인스턴스 | CPU 관측 범위 | CPU 평균 | CPU 최대 |
 |---|---|---:|---:|
@@ -184,9 +184,9 @@ p95와 p99는 각각 요청의 95%와 99%가 그 이내에 처리된 시간입�
 
 표의 시각은 5분 관측 구간의 시작입니다. 현재 인스턴스 두 대는 9월 15일 01:33:48에 시작됐습니다. 인스턴스 구성은 [API 시작 템플릿](../../terraform/modules/compute/main.tf#L1)에 연결됩니다.
 
-ASG `arcamap-api`의 가동 수와 목표 수량은 9월 14일 18:05~21일 23:55의 5분 관측에서 모두 **2대**였습니다. 공통 기간의 ASG 활동은 최초 생성과 배포에 따른 교체였으며, CPU 목표 추적에 따른 수량 변경 기록은 없었습니다.
+ASG `arcamap-api`의 가동 수와 목표 수량은 9월 14일 18:05~21일 23:55의 5분 관측에서 모두 **2대**였습니다. 공통 기간의 ASG 활동은 최초 생성과 배포에 따른 교체였으며 CPU 목표 추적에 따른 수량 변경 기록은 없었습니다.
 
-자동 확장 경보는 **1분마다 평가하지만 CPU는 5분마다 수집**합니다. 경보 평가 자료에는 CPU 값 사이에 빈 구간이 있습니다. 이 간격과 새 인스턴스의 준비 시간이 부하 증가에 대한 대응 속도를 늦출 수 있으므로, 확장 시 지연·오류와 준비 시간을 함께 시험해야 합니다.
+자동 확장 경보는 **1분마다 평가하지만 CPU는 5분마다 수집**합니다. 경보 평가 자료에는 CPU 값 사이에 빈 구간이 있습니다. 이 간격과 새 인스턴스의 준비 시간이 부하 증가에 대한 대응 속도를 늦출 수 있으므로 확장 시 지연·오류와 준비 시간을 함께 시험해야 합니다.
 
 > **용량 판단 제약**: 리소스 생성 초기의 지표와 호스트 메모리·동시 처리량·대표 부하 시험 자료가 부족합니다. 현재 크기를 줄여도 되는지, 최대 4대로 피크 수요를 감당할 수 있는지는 미확인입니다.
 
@@ -210,11 +210,11 @@ ASG `arcamap-api`의 가동 수와 목표 수량은 9월 14일 18:05~21일 23:55
 
 IOPS는 초당 입출력 횟수이며 디스크 대기열은 처리 대기 중인 입출력 요청 수입니다. CPU는 9월 14일 00:40, 나머지 지표는 00:45의 5분 구간부터 9월 21일 23:55까지 기록되어 있습니다. CPU 최댓값은 DB가 생성된 9월 14일 00:45 구간에 발생했습니다.
 
-ALB의 HTTP 200 응답과 DB 연결 수 0이 함께 관측되었습니다. DB를 사용하지 않는 요청이나 짧은 연결이 포함될 수 있어 API의 어떤 기능이 DB 부하를 만드는지 연결할 필요가 있습니다. 현재 파라미터 그룹은 쿼리 통계용 `pg_stat_statements`의 사전 로드를 설정하지만, 확장 활성화와 실행 계획·인덱스·잠금·연결 풀 상태는 미확인입니다.
+ALB의 HTTP 200 응답과 DB 연결 수 0이 함께 관측되었습니다. DB를 사용하지 않는 요청이나 짧은 연결이 포함될 수 있어 API의 어떤 기능이 DB 부하를 만드는지 연결할 필요가 있습니다. 현재 파라미터 그룹은 쿼리 통계용 `pg_stat_statements`의 사전 로드를 설정하지만 확장 활성화와 실행 계획·인덱스·잠금·연결 풀 상태는 미확인입니다.
 
 > **DB 성능 판단 제약**: 대표 쿼리와 API 처리의 연결 자료가 없어 자원 크기·IOPS·읽기 처리 용량의 적정성을 판단하기 어렵습니다. 생성 직후 CPU 상승의 내부 작업 원인도 미확인입니다.
 
-DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행 계획을 연결하면 자원 부족과 쿼리 병목을 구분할 수 있습니다. 자원 변경은 그 결과에 따라 결정하며, 현재 Multi-AZ의 장애 조치 기능을 유지해야 합니다.
+DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행 계획을 연결하면 자원 부족과 쿼리 병목을 구분할 수 있습니다. 자원 변경은 그 결과에 따라 결정하며 현재 Multi-AZ의 장애 조치 기능을 유지해야 합니다.
 
 관련 기준: [PERF03](#33-perf03--데이터-저장관리접근)의 BP01·BP02·BP03·BP04.
 
@@ -227,24 +227,24 @@ DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행
 | 9월 14일 01:27:45~01:48:35 | ASG 생성 전 ALB가 **503 4건**을 반환했습니다. |
 | 9월 14일 01:51:22~01:52:21 | ASG의 서비스 연결 역할 인수가 거부되어 시작 활동 **3건**이 실패했습니다. 이후 두 인스턴스의 시작 활동은 01:57:27·01:59:25에 완료됐습니다. |
 | 9월 14일 01:55:39~22:35:19 | 대상 상태 코드가 없는 **502 303건**과 대상 연결 오류 303건이 기록됐습니다. |
-| 9월 14일 22:40:20~22:46:43 | 첫 정상 헬스 체크가 기록됐고, 정상 대상 경보가 22:46:43에 회복됐습니다. |
+| 9월 14일 22:40:20~22:46:43 | 첫 정상 헬스 체크가 기록됐고 정상 대상 경보가 22:46:43에 회복됐습니다. |
 | 9월 15일 01:33:46~01:34:26 | 배포가 기존 두 대를 제외하고 새 두 대를 시작했습니다. 헬스 체크에는 시간 초과 4건·연결 재설정 4건이 기록됐습니다. |
 | 9월 15일 01:34·01:35 | 1분 단위 정상 대상 수의 최솟값이 **0대**였습니다. 01:36부터 2대가 관측됐습니다. |
 | 9월 15일 01:38:43~01:40:43 | 정상 대상 경보가 경보 상태에 머물렀습니다. 인스턴스 교체는 01:39:33에 완료됐습니다. |
 
 서비스 연결 역할 인수 거부는 초기 세 번의 시작 실패 원인입니다. 인스턴스가 시작된 뒤에도 이어진 대상 연결 실패의 내부 원인은 미확인입니다. 이 구간은 CPU 사용률이 낮아도 API가 요청을 처리할 준비를 갖추지 못할 수 있음을 보여 줍니다.
 
-배포의 [인스턴스 교체 정책](../../terraform/modules/compute/main.tf#L65)은 최소 정상 비율 **0%**, 최대 **100%**, 준비 시간 **300초**를 사용합니다. 당시 자동 롤백과 경보 연결은 꺼져 있었습니다. 기존 두 대가 함께 제외된 뒤 정상 대상이 사라졌으며, 같은 시간의 ASG 가동 수 2대만으로는 이러한 처리 용량 공백을 감지할 수 없었습니다. 운영상 중단을 허용하는 기준은 미확인입니다.
+배포의 [인스턴스 교체 정책](../../terraform/modules/compute/main.tf#L65)은 최소 정상 비율 **0%**, 최대 **100%**, 준비 시간 **300초**를 사용합니다. 당시 자동 롤백과 경보 연결은 꺼져 있었습니다. 기존 두 대가 함께 제외된 뒤 정상 대상이 사라졌으며 같은 시간의 ASG 가동 수 2대만으로는 이러한 처리 용량 공백을 감지할 수 없었습니다. 운영상 중단을 허용하는 기준은 미확인입니다.
 
 > **중단 영향 제약**: 9월 15일 01:33의 정상 대상 지표가 없고 이후 값은 1분 최솟값이므로 정확한 연속 중단 시간은 미확인입니다. 교체 중 사용자 실패 건수와 초기 5xx의 업무 손실도 요청별 업무 기록이 없어 산정하기 어렵습니다.
 
-배포 중 허용할 수 있는 중단 시간과 유지할 정상 처리 용량을 먼저 정해야 합니다. 연속적인 API 제공이 필요하다면 새 대상의 준비를 확인한 뒤 기존 대상을 제외하고, 정상 대상 경보에 배포 중단·롤백을 연결해야 합니다. 이때 임시 용량과 준비 시간이 늘어날 수 있으므로 배포 상한도 함께 정해야 합니다.
+배포 중 허용할 수 있는 중단 시간과 유지할 정상 처리 용량을 먼저 정해야 합니다. 연속적인 API 제공이 필요하다면 새 대상의 준비를 확인한 뒤 기존 대상을 제외하고 정상 대상 경보에 배포 중단·롤백을 연결해야 합니다. 이때 임시 용량과 준비 시간이 늘어날 수 있으므로 배포 상한도 함께 정해야 합니다.
 
 관련 기준: [PERF01](#31-perf01--자원과-아키텍처-선택)의 BP04, [PERF02](#32-perf02--컴퓨팅-자원-선택과-사용)의 BP05, [PERF05](#35-perf05--절차와-문화)의 BP02·BP05.
 
 ### 4.5 CloudFront 캐시 결과와 콘텐츠별 응답 성능
 
-**지도 캐시 Hit의 첫 바이트 응답은 Miss보다 짧습니다.** 공통 기간 CloudFront `arcamap.app`의 요청 지표와 접근 로그는 각각 **14,181건**이며, HTTP 403 응답과 전송 중 연결 종료도 포함합니다.
+**지도 캐시 Hit의 첫 바이트 응답은 Miss보다 짧습니다.** 공통 기간 CloudFront `arcamap.app`의 요청 지표와 접근 로그는 각각 **14,181건**이며 HTTP 403 응답과 전송 중 연결 종료도 포함합니다.
 
 지표는 버지니아 북부 CloudWatch의 배포 `E39UQTOCMBVZB3`, 로그는 [CloudFront 로그 버킷](../../terraform/modules/cloudfront/main.tf#L152)에 있습니다. 접근 로그의 기간은 `date`·`time`에 기록된 응답 완료 시각을 기준으로 합니다.
 
@@ -288,7 +288,7 @@ DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행
 
 캐시 Hit은 원본 접근 없이 지도 데이터를 제공하며 낮은 응답 지연이 관측되었습니다. 요청 범위·엣지 위치·클라이언트 연결 조건도 서로 달라 캐시만의 개선 효과를 분리하기는 어렵습니다.
 
-홈 경로 `/`·`/index.html`의 200 응답은 **Hit 2건·Miss 158건·RefreshHit 474건**입니다. 홈 콘텐츠에는 원본 재확인이 자주 발생했습니다. 현재 정적 파일 정책의 TTL은 최대 300초이지만, 객체별 `Cache-Control`과 갱신 이력이 없어 재확인의 원인과 만료 시간의 적정성은 미확인입니다. 사진 경로의 요청 기록이 없어 사진 캐시의 효과도 확인하기 어렵습니다.
+홈 경로 `/`·`/index.html`의 200 응답은 **Hit 2건·Miss 158건·RefreshHit 474건**입니다. 홈 콘텐츠에는 원본 재확인이 자주 발생했습니다. 현재 정적 파일 정책의 TTL은 최대 300초이지만 객체별 `Cache-Control`과 갱신 이력이 없어 재확인의 원인과 만료 시간의 적정성은 미확인입니다. 사진 경로의 요청 기록이 없어 사진 캐시의 효과도 확인하기 어렵습니다.
 
 > **콘텐츠 성능 판단 제약**: 403의 원인과 지도 전송 중단의 사용자 영향, 화면 표시 완료 시간과 콘텐츠 신선도 요구가 미확인입니다. 현재 로그만으로 사용자 경험과 갱신 적합성을 판단하기 어렵습니다.
 
@@ -298,7 +298,7 @@ DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행
 
 ### 4.6 성능 관측 범위와 운영 대응
 
-**요청·자원·API 로그는 수집하지만 업무별 지연과 DB 처리를 연결할 자료가 부족합니다.** API 관련 기록은 시스템 로그 그룹에 있으며, 사용자 정의 경보는 운영자에게 알림을 보내지 않습니다.
+**요청·자원·API 로그는 수집하지만 업무별 지연과 DB 처리를 연결할 자료가 부족합니다.** API 관련 기록은 시스템 로그 그룹에 있으며 사용자 정의 경보는 운영자에게 알림을 보내지 않습니다.
 
 | 대상 | 현재 상태와 성능 판단 |
 |---|---|
@@ -310,7 +310,7 @@ DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행
 
 > **사용자·운영 자료 제약**: 사용자 지역별 지연·화면 성능, 업무 KPI 합의, 벤치마크·부하 시험, 정기 지표 검토 기록이 없어 네트워크 배치의 적합성과 성능 관리 절차의 운영 수준은 미확인입니다.
 
-대표 사용자 동작에 API 로그·응답·DB 처리를 연결하고, 필요한 호스트 지표를 보완하면 병목 위치를 구분하기 쉬워집니다. 업무별 지연·오류·처리량 목표에 맞춰 기존 경보의 통지와 대응 조건을 정해야 합니다. 로그 보존 기간은 현재 30일을 유지하면서 필요한 기록을 활용할 수 있습니다.
+대표 사용자 동작에 API 로그·응답·DB 처리를 연결하고 필요한 호스트 지표를 보완하면 병목 위치를 구분하기 쉬워집니다. 업무별 지연·오류·처리량 목표에 맞춰 기존 경보의 통지와 대응 조건을 정해야 합니다. 로그 보존 기간은 현재 30일을 유지하면서 필요한 기록을 활용할 수 있습니다.
 
 관련 기준: [PERF02](#32-perf02--컴퓨팅-자원-선택과-사용)의 BP03, [PERF03](#33-perf03--데이터-저장관리접근)의 BP03, [PERF05](#35-perf05--절차와-문화)의 BP01·BP02·BP05·BP07.
 
@@ -318,6 +318,6 @@ DB를 사용하는 기능의 성공률과 처리 시간에 쿼리 통계·실행
 
 ArcaMap은 **엣지 캐시·두 가용 영역의 요청 분산·CPU 기반 자동 확장·용도별 저장소**를 운영합니다. API와 DB의 CPU 사용률은 낮고 지도 캐시 Hit의 응답 지연도 짧습니다. 다만 API 응답의 대부분이 404이며 실제 DB 업무 부하가 미확인이라 현재 자원 크기와 최대 처리 용량의 적정성은 판단하기 어렵습니다.
 
-우선 과제는 **초기 연결 실패의 원인 파악과 배포 중 정상 대상 유지**, **업무별 성공률·지연·처리량과 DB 처리의 연결**입니다. 콘텐츠는 403·전송 중단의 사용자 영향과 홈·정적 자산·지도의 갱신 요구를 확인해야 합니다. 캐시 로그는 활용되고 있으며, 캐시 만료 시간과 네트워크 배치의 적합성에는 신선도·사용자 지연 요구가 더 필요합니다.
+우선 과제는 **초기 연결 실패의 원인 파악과 배포 중 정상 대상 유지**, **업무별 성공률·지연·처리량과 DB 처리의 연결**입니다. 콘텐츠는 403·전송 중단의 사용자 영향과 홈·정적 자산·지도의 갱신 요구를 확인해야 합니다. 캐시 로그는 활용되고 있으며 캐시 만료 시간과 네트워크 배치의 적합성에는 신선도·사용자 지연 요구가 더 필요합니다.
 
 성능 목표와 중단 허용 조건을 정하고 기존 관측·경보를 보완하면 자원 크기·확장 정책·캐시 설정의 변경 효과를 판단할 수 있습니다. 이때 필요한 정상 처리 용량과 DB 장애 조치, 콘텐츠 신선도를 함께 유지해야 합니다.
