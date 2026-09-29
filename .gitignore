@@ -1,0 +1,20 @@
+# Terraform working directories and generated state/plan files
+/app/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Local credentials
+/env/database/terraform.tfvars
+/terraform/env/db/terraform.tfvars
+/v1/env/db/terraform.tfvars
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Only include record among v2 directories
+/v2/*/
+!/v2/record/

@@ -1,0 +1,601 @@
+{
+  "Diagram": {
+    "DefinitionFiles": [
+      {
+        "Type": "URL",
+        "Url": "https://raw.githubusercontent.com/awslabs/diagram-as-code/main/definitions/definition-for-aws-icons-light.yaml"
+      }
+    ],
+    "Resources": {
+      "Canvas": {
+        "Type": "AWS::Diagram::Canvas",
+        "Children": [
+          "Cloud"
+        ],
+        "Direction": "vertical"
+      },
+      "Cloud": {
+        "Type": "AWS::Diagram::Cloud",
+        "Title": "Arcamap | Terraform configuration",
+        "Children": [
+          "Entry",
+          "Body"
+        ],
+        "Direction": "vertical"
+      },
+      "Entry": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "User",
+          "DNS",
+          "CDN",
+          "WAF"
+        ]
+      },
+      "User": {
+        "Type": "AWS::Diagram::Resource",
+        "Title": "Browser",
+        "Preset": "User"
+      },
+      "DNS": {
+        "Type": "AWS::Route53::HostedZone",
+        "Title": "Existing DNS account\nweb A/AAAA | API A"
+      },
+      "CDN": {
+        "Type": "AWS::CloudFront::Distribution",
+        "Title": "arcamap.app\nOAC | GET/HEAD"
+      },
+      "WAF": {
+        "Type": "AWS::WAFv2::WebACL",
+        "Title": "CloudFront only\n4 managed rules: COUNT"
+      },
+      "Body": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "Seoul",
+          "Virginia"
+        ],
+        "Align": "top"
+      },
+      "Seoul": {
+        "Type": "AWS::Region",
+        "Title": "ap-northeast-2",
+        "Children": [
+          "Storage",
+          "VPC",
+          "Operations"
+        ],
+        "Direction": "vertical"
+      },
+      "Storage": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "Static",
+          "Photos",
+          "Maps",
+          "CFLogs",
+          "Artifact"
+        ]
+      },
+      "Static": {
+        "Type": "AWS::S3::Bucket",
+        "Title": "Static S3\nTTL 300s"
+      },
+      "Photos": {
+        "Type": "AWS::S3::Bucket",
+        "Title": "Photos S3\n/photos/* | TTL 86400s\nVersioned: old versions 7d"
+      },
+      "Maps": {
+        "Type": "AWS::S3::Bucket",
+        "Title": "Existing maps S3\n/20260907.pmtiles\nBucket policy managed"
+      },
+      "CFLogs": {
+        "Type": "AWS::S3::Bucket",
+        "Title": "CloudFront logs S3\nExpiration 30d"
+      },
+      "Artifact": {
+        "Type": "AWS::S3::Bucket",
+        "Title": "Deployment S3\nwas/{sha256}.tar.gz"
+      },
+      "VPC": {
+        "Type": "AWS::EC2::VPC",
+        "Title": "arcamap-vpc | 10.0.0.0/16",
+        "Children": [
+          "IGW",
+          "ALB",
+          "PublicRow",
+          "APIRow",
+          "DBGroup"
+        ],
+        "Direction": "vertical"
+      },
+      "IGW": {
+        "Type": "AWS::EC2::InternetGateway",
+        "Title": "Internet gateway"
+      },
+      "ALB": {
+        "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+        "Title": "One public ALB | both public subnets\napi.arcamap.app | 80 -> HTTPS 443\nSG -> API:8080 | /health"
+      },
+      "PublicRow": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "PublicA",
+          "PublicC"
+        ]
+      },
+      "PublicA": {
+        "Type": "AWS::EC2::Subnet",
+        "Title": "2a public | 10.0.1.0/24\n0.0.0.0/0 -> IGW",
+        "Children": [
+          "NATA"
+        ],
+        "Preset": "PublicSubnet"
+      },
+      "PublicC": {
+        "Type": "AWS::EC2::Subnet",
+        "Title": "2c public | 10.0.2.0/24\n0.0.0.0/0 -> IGW",
+        "Children": [
+          "NATC"
+        ],
+        "Preset": "PublicSubnet"
+      },
+      "NATA": {
+        "Type": "AWS::EC2::NatGateway",
+        "Title": "NAT 2a + EIP"
+      },
+      "NATC": {
+        "Type": "AWS::EC2::NatGateway",
+        "Title": "NAT 2c + EIP"
+      },
+      "APIRow": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "APIA",
+          "APIC"
+        ]
+      },
+      "APIA": {
+        "Type": "AWS::EC2::Subnet",
+        "Title": "2a private | 10.0.11.0/24\n0.0.0.0/0 -> NAT 2a",
+        "Children": [
+          "EC2A",
+          "BuildEC2"
+        ],
+        "Preset": "PrivateSubnet",
+        "Direction": "vertical"
+      },
+      "APIC": {
+        "Type": "AWS::EC2::Subnet",
+        "Title": "2c private | 10.0.12.0/24\n0.0.0.0/0 -> NAT 2c",
+        "Children": [
+          "EC2C"
+        ],
+        "Preset": "PrivateSubnet"
+      },
+      "EC2A": {
+        "Type": "AWS::EC2::Instance",
+        "Title": "API EC2 | t3.small\nASG placement illustrative"
+      },
+      "EC2C": {
+        "Type": "AWS::EC2::Instance",
+        "Title": "API EC2 | t3.small\nASG placement illustrative"
+      },
+      "BuildEC2": {
+        "Type": "AWS::EC2::Instance",
+        "Title": "Temporary build/test EC2\nImage Builder | t3.small"
+      },
+      "DBGroup": {
+        "Type": "AWS::Diagram::Resource",
+        "Title": "DB subnet group | isolated\nNo internet default route",
+        "Children": [
+          "DBRow",
+          "RDS"
+        ],
+        "Direction": "vertical"
+      },
+      "DBRow": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "DBA",
+          "DBC"
+        ]
+      },
+      "DBA": {
+        "Type": "AWS::EC2::Subnet",
+        "Title": "2a | 10.0.21.0/24",
+        "Preset": "PrivateSubnet"
+      },
+      "DBC": {
+        "Type": "AWS::EC2::Subnet",
+        "Title": "2c | 10.0.22.0/24",
+        "Preset": "PrivateSubnet"
+      },
+      "RDS": {
+        "Type": "AWS::RDS::DBInstance",
+        "Title": "PostgreSQL | Multi-AZ\nPrimary AZ not pinned\nPrivate 5432 | API SG only\nDB inputs: 17.11 / db.t4g.medium / 20-100 GiB"
+      },
+      "Operations": {
+        "Type": "AWS::Diagram::HorizontalStack",
+        "Children": [
+          "ASG",
+          "Builder",
+          "Secret",
+          "IAM",
+          "CW",
+          "ACM"
+        ]
+      },
+      "ASG": {
+        "Type": "AWS::AutoScaling::AutoScalingGroup",
+        "Title": "API ASG | min 2 / max 4\nCPU target 50% | ELB health\nLaunch template: built AMI"
+      },
+      "Builder": {
+        "Type": "AWS::ImageBuilder::Image",
+        "Title": "Image Builder -> tested AMI\nUbuntu 26.04 amd64\nFastAPI + CloudWatch Agent"
+      },
+      "Secret": {
+        "Type": "AWS::SecretsManager::Secret",
+        "Title": "arcamap/api/database\nRuntime DB environment"
+      },
+      "IAM": {
+        "Type": "AWS::IAM::Role",
+        "Title": "API + build roles/profiles\nSSM | CloudWatch | Secret\nBuild: artifact read"
+      },
+      "CW": {
+        "Type": "AWS::CloudWatch::Alarm",
+        "Title": "Seoul logs: 30d\nALB / EC2 / build / RDS\n6 WAS + 3 DB alarms\nActions disabled"
+      },
+      "ACM": {
+        "Type": "AWS::CertificateManager::Certificate",
+        "Title": "Existing API certificate"
+      },
+      "Virginia": {
+        "Type": "AWS::Region",
+        "Title": "us-east-1 configuration",
+        "Children": [
+          "WebACM",
+          "WAFLogs"
+        ],
+        "Direction": "vertical"
+      },
+      "WebACM": {
+        "Type": "AWS::CertificateManager::Certificate",
+        "Title": "Existing web certificate"
+      },
+      "WAFLogs": {
+        "Type": "AWS::Logs::LogGroup",
+        "Title": "WAF logs | 14d"
+      }
+    },
+    "Links": [
+      {
+        "Source": "User",
+        "SourcePosition": "E",
+        "Target": "CDN",
+        "TargetPosition": "W",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "HTTPS"
+          }
+        }
+      },
+      {
+        "Source": "User",
+        "SourcePosition": "S",
+        "Target": "ALB",
+        "TargetPosition": "W",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "API HTTPS"
+          }
+        }
+      },
+      {
+        "Source": "DNS",
+        "SourcePosition": "E",
+        "Target": "CDN",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "LineStyle": "dashed",
+        "Labels": {
+          "TargetRight": {
+            "Title": "Alias"
+          }
+        }
+      },
+      {
+        "Source": "DNS",
+        "SourcePosition": "S",
+        "Target": "ALB",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "LineStyle": "dashed"
+      },
+      {
+        "Source": "WAF",
+        "SourcePosition": "W",
+        "Target": "CDN",
+        "TargetPosition": "E",
+        "Type": "orthogonal",
+        "LineStyle": "dashed",
+        "Labels": {
+          "TargetRight": {
+            "Title": "Attached"
+          }
+        }
+      },
+      {
+        "Source": "CDN",
+        "SourcePosition": "S",
+        "Target": "Static",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "Default"
+          }
+        }
+      },
+      {
+        "Source": "CDN",
+        "SourcePosition": "S",
+        "Target": "Photos",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "/photos/*"
+          }
+        }
+      },
+      {
+        "Source": "CDN",
+        "SourcePosition": "S",
+        "Target": "Maps",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "PMTiles"
+          }
+        }
+      },
+      {
+        "Source": "CDN",
+        "SourcePosition": "S",
+        "Target": "CFLogs",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "Access logs"
+          }
+        }
+      },
+      {
+        "Source": "WAF",
+        "SourcePosition": "E",
+        "Target": "WAFLogs",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "Logs"
+          }
+        }
+      },
+      {
+        "Source": "ALB",
+        "SourcePosition": "S",
+        "Target": "EC2A",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "HTTP 8080"
+          }
+        }
+      },
+      {
+        "Source": "ALB",
+        "SourcePosition": "S",
+        "Target": "EC2C",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "HTTP 8080"
+          }
+        }
+      },
+      {
+        "Source": "EC2A",
+        "SourcePosition": "S",
+        "Target": "RDS",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "TCP 5432"
+          }
+        }
+      },
+      {
+        "Source": "EC2C",
+        "SourcePosition": "S",
+        "Target": "RDS",
+        "TargetPosition": "N",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "TCP 5432"
+          }
+        }
+      },
+      {
+        "Source": "EC2A",
+        "SourcePosition": "W",
+        "Target": "NATA",
+        "TargetPosition": "S",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "HTTPS egress"
+          }
+        }
+      },
+      {
+        "Source": "EC2C",
+        "SourcePosition": "E",
+        "Target": "NATC",
+        "TargetPosition": "S",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "HTTPS egress"
+          }
+        }
+      },
+      {
+        "Source": "Artifact",
+        "SourcePosition": "S",
+        "Target": "BuildEC2",
+        "TargetPosition": "E",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "Build input"
+          }
+        }
+      },
+      {
+        "Source": "Builder",
+        "SourcePosition": "N",
+        "Target": "BuildEC2",
+        "TargetPosition": "S",
+        "Type": "orthogonal",
+        "LineStyle": "dashed",
+        "Labels": {
+          "TargetRight": {
+            "Title": "Build/test"
+          }
+        }
+      },
+      {
+        "Source": "Builder",
+        "SourcePosition": "W",
+        "Target": "ASG",
+        "TargetPosition": "E",
+        "Type": "orthogonal",
+        "TargetArrowHead": {
+          "Type": "Open"
+        },
+        "Labels": {
+          "TargetRight": {
+            "Title": "AMI"
+          }
+        }
+      },
+      {
+        "Source": "ASG",
+        "SourcePosition": "N",
+        "Target": "EC2A",
+        "TargetPosition": "S",
+        "Type": "orthogonal",
+        "LineStyle": "dashed"
+      },
+      {
+        "Source": "ASG",
+        "SourcePosition": "N",
+        "Target": "EC2C",
+        "TargetPosition": "S",
+        "Type": "orthogonal",
+        "LineStyle": "dashed"
+      },
+      {
+        "Source": "Secret",
+        "SourcePosition": "N",
+        "Target": "EC2C",
+        "TargetPosition": "E",
+        "Type": "orthogonal",
+        "LineStyle": "dashed",
+        "Labels": {
+          "TargetRight": {
+            "Title": "Runtime fetch"
+          }
+        }
+      },
+      {
+        "Source": "ACM",
+        "SourcePosition": "N",
+        "Target": "ALB",
+        "TargetPosition": "E",
+        "Type": "orthogonal",
+        "LineStyle": "dashed",
+        "Labels": {
+          "TargetRight": {
+            "Title": "TLS"
+          }
+        }
+      },
+      {
+        "Source": "WebACM",
+        "SourcePosition": "N",
+        "Target": "CDN",
+        "TargetPosition": "E",
+        "Type": "orthogonal",
+        "LineStyle": "dashed",
+        "Labels": {
+          "TargetRight": {
+            "Title": "TLS"
+          }
+        }
+      }
+    ]
+  }
+}
