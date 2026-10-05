@@ -1,0 +1,3 @@
+# env/network 적용 후 운영 API 서브넷과 DSQL Endpoint 보안 그룹을 조회합니다.
+# 클러스터 연결 수 한도가 증액된 경우 실제 값으로 바꾸세요.
+dsql_cluster_connection_quota = 10000

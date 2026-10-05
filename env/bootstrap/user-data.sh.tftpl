@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+export AWS_REGION=ap-northeast-2
+command -v curl python3
+install -d -m 0755 /opt/arcamap
+package_dir=$(mktemp -d)
+trap 'rm -r -- "$package_dir"' EXIT
+curl --fail --silent --show-error --location --retry 3 --max-time 300 --proto '=https' --proto-redir '=https' \
+  https://github.com/astral-sh/uv/releases/download/0.12.12/uv-x86_64-unknown-linux-gnu.tar.gz --output "$package_dir/uv.tar.gz"
+curl --fail --silent --show-error --location --retry 3 --max-time 60 --proto '=https' --proto-redir '=https' \
+  https://github.com/astral-sh/uv/releases/download/0.12.12/uv-x86_64-unknown-linux-gnu.tar.gz.sha256 --output "$package_dir/uv.sha256"
+printf '%s  %s\n' "$(cut -d ' ' -f 1 "$package_dir/uv.sha256")" "$package_dir/uv.tar.gz" | sha256sum --check
+tar --extract --gzip --file "$package_dir/uv.tar.gz" --directory "$package_dir"
+install -m 0755 "$package_dir/uv-x86_64-unknown-linux-gnu/uv" /usr/local/bin/uv
+export UV_PYTHON_INSTALL_DIR=/opt/arcamap/python UV_CACHE_DIR="$package_dir/uv-cache"
+uv python install 3.14.7
+uv run --no-project --python 3.14.7 --with boto3==1.43.107 -- python - <<'PY'
+import boto3
+boto3.client('s3', region_name='ap-northeast-2').download_file('${bucket}', '${key}', '/tmp/arcamap-bootstrap.tar.gz')
+PY
+printf '%s  %s\n' '${sha256}' /tmp/arcamap-bootstrap.tar.gz | sha256sum --check
+tar --extract --gzip --file /tmp/arcamap-bootstrap.tar.gz --directory /opt/arcamap --no-same-owner
+rm /tmp/arcamap-bootstrap.tar.gz
+uv sync --project /opt/arcamap/app/was --locked --no-dev --python 3.14.7 --no-editable
+test -s /etc/ssl/certs/Amazon_Root_CA_1.pem
+touch /opt/arcamap/bootstrap-ready
